@@ -403,7 +403,7 @@ def main():
     # Analysis
     if (args.analysis == 'singles' or args.analysis == 'all'):
         analysis_singles(df_clean, args.minlength, basename)
-    if (args.analysis == 'pair' or args.analysis == 'all'):
+    if (args.analysis == 'pairs' or args.analysis == 'all'):
         analysis_pairs(df_clean, args.minlength, basename)
     if (args.analysis == 'triples' or args.analysis == 'all'):
         analysis_triples(df_clean, args.minlength, basename)
