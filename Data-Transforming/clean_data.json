@@ -1,5 +1,5 @@
 {
-    "data_file": "./CMBabbleMaster_20240319_cluster6a.csv",
+    "data_file": "./Data-Transforming/CMBabbleMaster_20240319_cluster6a.csv",
     "columns": [
         "Nest ID",
         "Nestling ID",
@@ -21,15 +21,12 @@
         "Date on vocalization 2",
         "Age on bout day",
         "Days prior to fledging",
-        "Bout no."
+        "Bout ID (sans subtype)",
+        "Bout no.",
+        "Cluster6"
     ],
-    "transformations": {
-    },
-    "fill_na": {
-    },
-    "rename_columns": {
-        "old_name": "new_name"
-    },
-    "data_types": {
-    }
+    "transformations": {},
+    "fill_na": {},
+    "rename_columns": {},
+    "data_types": {}
 }
