@@ -1,0 +1,35 @@
+{
+    "data_file": "./CMBabbleMaster_20240319_cluster6a.csv",
+    "columns": [
+        "Nest ID",
+        "Nestling ID",
+        "Nestling",
+        "Sex",
+        "Treatment",
+        "Notes",
+        "Audition work",
+        "Raven work",
+        "No. eggs hatched from nest",
+        "No. birds fledged from nest",
+        "Hatchno",
+        "Hatseq",
+        "Hatch date",
+        "Fledge date",
+        "Fledge age",
+        "Period",
+        "Date on vocalization",
+        "Date on vocalization 2",
+        "Age on bout day",
+        "Days prior to fledging",
+        "Bout no."
+    ],
+    "transformations": {
+    },
+    "fill_na": {
+    },
+    "rename_columns": {
+        "old_name": "new_name"
+    },
+    "data_types": {
+    }
+}
