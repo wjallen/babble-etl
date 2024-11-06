@@ -38,7 +38,7 @@ def clean_and_transform_data(config_file):
         config = json.load(f)
     
     logging.info('Loading data from CSV')
-    df = pd.read_csv(config["data_file"])
+    df = pd.read_csv(config["data_file"], low_memory=False)
     
     logging.info('Selecting specified columns')
     df = df[config["columns"]]
@@ -63,8 +63,17 @@ def clean_and_transform_data(config_file):
         "Cluster6": list
     })
 
+    logging.info('Starting to dump individual bouts (Cluster6)')
+    # Step 1: Calculate the minimum length of lists in "Cluster6"
+    min_length = transformed_df["Cluster6"].apply(len).min()
+
+    # Step 2: Filter out rows where the length of "Cluster6" is less than the min length
+    df = transformed_df[transformed_df["Cluster6"].apply(len) >= min_length]
+    logging.info(f'{(df.shape)} bouts were greater than or equal to {min_length} signals')
+
+
     logging.info('Data transformation completed')
-    return transformed_df
+    return df
 
 if __name__ == "__main__":
     # Configure logging
@@ -76,5 +85,5 @@ if __name__ == "__main__":
     # Save final formatted data
     logging.info('Saving formatted data to CSV')
     cleaned_data.to_csv("./Data-Transforming/cleaned_data.csv", index=False)
-        
+
     logging.info('Process completed successfully')
