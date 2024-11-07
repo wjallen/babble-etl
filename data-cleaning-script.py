@@ -3,9 +3,11 @@ import csv
 import json
 import logging
 from collections import Counter
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np
 
 k=6
 
@@ -77,7 +79,6 @@ def clean_and_transform_data(config_file: str, basename: str):
     return(df)
 
 
-
 def dump_bouts(df_clean: pd.DataFrame, minlength: int, dump: bool):
     """
     Dump individual bouts from a DataFrame that meet a minimum length requirement.
@@ -103,7 +104,6 @@ def dump_bouts(df_clean: pd.DataFrame, minlength: int, dump: bool):
     return count
 
 
-# Analysis 1 - 5
 def analysis_singles(df_clean: pd.DataFrame, minlength: int, basename: str):
     singles = count_singles(df_clean, minlength)
 
@@ -114,14 +114,15 @@ def analysis_singles(df_clean: pd.DataFrame, minlength: int, basename: str):
         writer.writerow(['signal', 'freq'])
         for item in singles.keys():
             writer.writerow([item, singles[item]])
-
+    
+    logging.info('Single sequence analysis complete')
     plot_singles(singles, basename, df_clean)
 
     return
 
 
-
 def analysis_pairs(df_clean: pd.DataFrame, minlength: int, basename: str):
+    # Analyze and save pairs signal sequences that meet minimum length requirement.
     pairs = count_pairs(df_clean, minlength)
 
     with open(basename + '_pairs.json', 'w') as o:
@@ -133,20 +134,44 @@ def analysis_pairs(df_clean: pd.DataFrame, minlength: int, basename: str):
             for itemb in pairs[itema].keys():
                 # writing signal as '1', '2', etc, instead of 'a1', 'b2', etc
                 writer.writerow([itema[1:], itemb[1:], pairs[itema][itemb]])
-
+    
+    logging.info('Pair sequence analysis complete')
     plot_pairs(pairs, basename, df_clean)
 
     return
 
 
+def analysis_triples(df_clean: pd.DataFrame, minlength: int, basename: str):
+    if minlength < 3:
+        minlength = 3
+        logging.info('Setting minlength to 3 for triples analysis')
+
+    triples = count_triples(df_clean, minlength)
+
+    with open(basename + '_triples.json', 'w') as o:
+        json.dump(triples, o, indent=2)
+    with open(basename + '_triples.csv', 'w') as o:
+        writer = csv.writer(o)
+        writer.writerow(['signal1', 'signal2', 'signal3', 'freq'])
+        for itema in triples.keys():
+            for itemb in triples[itema].keys():
+                for itemc in triples[itema][itemb].keys():
+                    writer.writerow([itema[1:], itemb[1:], itemc[1:], triples[itema][itemb][itemc]])
+    logging.info('Triple sequence analysis complete')
+    plot_triples(triples, basename, df_clean)
+
+    # First row of csv output is header, then contains Nx (NxN blocks)
+    # So in the case of 39 signals, Rows 2-40 of output correspond to 
+    # all bouts that start with signal 1, then is 39x39 matrix of second
+    # and third signal. First look left for second signal, then go down
+    # for third signal. Rows 41-79 would be the second 'block' - all 
+    # bouts that start with signal 2, etc.
+    return
+
 
 def count_singles(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
     Count the frequency of single signals that meet a minimum length requirement.
-
-    Parameters:
-    df_clean (pd.DataFrame): The input DataFrame.
-    minlength (int): The minimum length requirement for a single signal to be counted.
 
     Returns:
     dict: A dictionary where the keys are the single signal IDs and the values are their counts.
@@ -160,15 +185,52 @@ def count_singles(df_clean: pd.DataFrame, minlength: int) -> dict:
     return freq_singles
 
 
-
 def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
-    logging.info('Starting to count pairs')
+    """
+    Count the frequency of pairs signals that meet a minimum length requirement.
 
-    freq_pairs = {}
+    Returns:
+    dict: A dictionary where the keys are the pairs signal IDs and the values are their counts.
+    """
+    logging.info('Starting to count pairs')
+    
+    # Initialize the pairs dictionary with zeros
+    freq_pairs = {f'a{i}': {f'b{j}': 0 for j in range(1, k + 1)} for i in range(1, k + 1)}
+    
+    # Filter sequences by length and count pairs
+    valid_sequences = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    counter = len(valid_sequences)
+    
+    for sequence in valid_sequences['Cluster6']:
+        # Count pairs using zip
+        for first, second in zip(sequence, sequence[1:]):
+            if f'a{first}' in freq_pairs and f'b{second}' in freq_pairs[f'a{first}']:
+                freq_pairs[f'a{first}'][f'b{second}'] += 1
+            else:
+                logging.debug(f'Invalid pair found: {first}, {second}')
+
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
+    logging.info('Finished counting pairs')
+    
+    return (freq_pairs)
+
+
+def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
+    """
+    Count the frequency of triples signals that meet a minimum length requirement.
+
+    Returns:
+    dict: A dictionary where the keys are the triples signal IDs and the values are their counts.
+    """
+    logging.info('Starting to count triples')
+
+    freq_triples = {}
     for vala in [ 'a'+str(i) for i in range(1,k+1) ]:
-        freq_pairs[vala] = {}
+        freq_triples[vala] = {}
         for valb in [ 'b'+str(i) for i in range(1,k+1) ]:
-            freq_pairs[vala][valb] = 0
+            freq_triples[vala][valb] = {}
+            for valc in [ 'c'+str(i) for i in range(1,k+1) ]:
+                freq_triples[vala][valb][valc] = 0
 
     counter=0
     for index, row in df_clean.iterrows():
@@ -176,17 +238,16 @@ def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
             continue
         else:
             counter += 1
-            for first, second in zip(row['Cluster6'], row['Cluster6'][1:]):
+            for first, second, third in zip(row['Cluster6'], row['Cluster6'][1:], row['Cluster6'][2:]):
                 try:
-                    freq_pairs['a'+str(first)]['b'+str(second)] += 1
+                    freq_triples['a'+str(first)]['b'+str(second)]['c'+str(third)] += 1
                 except KeyError as e:
-                    logging.debug(f'KeyError for {first} or {second}')
+                    logging.debug(f'KeyError for {first} or {second} or {third}')
 
-    logging.info(f'{counter} bouts were greater than or equal to {minlength} signals')
-    logging.info('Finished counting pairs')
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
+    logging.info('Finished counting triples')
 
-    return(freq_pairs)
-
+    return(freq_triples)
 
 
 def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
@@ -222,49 +283,69 @@ def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
 
 
 def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
-   """
-   Plot heatmap of signal pair frequencies.
+    """
+    Plot heatmap of signal pair frequencies.
 
-   """
-   logging.info('Plotting pairs')
+    """
+    logging.info('Plotting pairs')
 
-   # Create and populate frequency matrix 
-   df = pd.DataFrame(0, columns=range(1,k+1), index=range(1,k+1), dtype=float)
-   for a_sig in data:
-       for b_sig in data[a_sig]:
-           row, col = int(b_sig[1:]), int(a_sig[1:])
-           df.loc[row, col] = float(data[a_sig][b_sig])
+    # Create and populate frequency matrix 
+    df = pd.DataFrame(0, columns=range(1,k+1), index=range(1,k+1), dtype=float)
+    for a_sig in data:
+        for b_sig in data[a_sig]:
+            row, col = int(b_sig[1:]), int(a_sig[1:])
+            df.loc[row, col] = int(data[a_sig][b_sig])
 
-   # Create plot
-   fig, ax = plt.subplots(figsize=(10,8))
-   im = ax.imshow(df, cmap='YlOrRd_r')
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10,8))
+    im = ax.imshow(df, cmap='YlOrRd_r')
 
-   # Configure axes
-   ax.set_xticks(range(k))
-   ax.set_yticks(range(k)) 
-   ax.set_xticklabels(range(1,k+1), fontsize=10)
-   ax.set_yticklabels(range(1,k+1), fontsize=10)
-   ax.set_xlabel('Second Signal in Sequence')
-   ax.set_ylabel('First Signal in Sequence')
+    # Configure axes
+    ax.set_xticks(range(k))
+    ax.set_yticks(range(k)) 
+    ax.set_xticklabels(range(1,k+1), fontsize=10)
+    ax.set_yticklabels(range(1,k+1), fontsize=10)
+    ax.set_xlabel('Second Signal in Sequence')
+    ax.set_ylabel('First Signal in Sequence')
 
-   # Add title
-   if len(dfc.index) == 1:
-       row = dfc.iloc[0]
-       plt.suptitle('Frequency of Signal Pairs', fontsize=13)
-       plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
-                f'Tr={row["treatment"]}; Sex={row["sex"]}',
-                fontsize=10)
-   else:
+    # Add title
+    if len(dfc.index) == 1:
+        row = dfc.iloc[0]
+        plt.suptitle('Frequency of Signal Pairs', fontsize=13)
+        plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
+                    f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
+    else:
+        plt.title('Frequency of Signal Pairs')
+
+    # Add colorbar and save
+    cbar = fig.colorbar(im)
+    cbar.ax.set_ylabel('Frequency', rotation=-90, va='bottom')
+    
+    fig.tight_layout()
+    plt.savefig(basename + '_pairs.png')
+
+    return()
+
+
+def plot_triples(data: dict, basename: str, dfc: pd.DataFrame):
+    """
+    Plot heatmaps of triple signal frequencies, one subplot per first signal.
+    """
+    logging.info('Plotting triples')   
+
+    # Add title
+    if len(dfc.index) == 1:
+        row = dfc.iloc[0]
+        plt.suptitle('Frequency of Signal Pairs', fontsize=13)
+        plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
+                    f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
+    else:
        plt.title('Frequency of Signal Pairs')
 
-   # Add colorbar and save
-   cbar = fig.colorbar(im)
-   cbar.ax.set_ylabel('Frequency', rotation=-90, va='bottom')
-   
-   fig.tight_layout()
-   plt.savefig(basename + '_pairs.png')
 
-   return()
+    # fig.tight_layout()
+    plt.savefig(basename + '_triples.png')
+
 
 
 def main():
@@ -315,8 +396,8 @@ def main():
         analysis_singles(df_clean, args.minlength, basename)
     if (args.analysis == 'pairs' or args.analysis == 'all'):
         analysis_pairs(df_clean, args.minlength, basename)
-    # if (args.analysis == 'triples' or args.analysis == 'all'):
-    #     analysis_triples(df_clean, args.minlength, basename)
+    if (args.analysis == 'triples' or args.analysis == 'all'):
+        analysis_triples(df_clean, args.minlength, basename)
     # if (args.analysis == 'quads' or args.analysis == 'all'):
     #     analysis_quads(df_clean, args.minlength, basename)
     # if (args.analysis == 'quints' or args.analysis == 'all'):
