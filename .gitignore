@@ -3,6 +3,7 @@
 # cvs
 *.csv
 .png
+.DS_Store
 
 
 # venv
