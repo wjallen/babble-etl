@@ -1,5 +1,5 @@
 {
-    "data_file": "./Data-Transforming/CMBabbleMaster_20240319_cluster6a.csv",
+    "data_file": "./CMBabbleMaster_20240319_cluster6a.csv",
     "columns": [
         "Nest ID",
         "Nestling ID",
