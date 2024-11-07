@@ -217,37 +217,35 @@ def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
 
 def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
-    Count the frequency of triples signals that meet a minimum length requirement.
+    Count the frequency of triple signals that meet a minimum length requirement.
 
     Returns:
-    dict: A dictionary where the keys are the triples signal IDs and the values are their counts.
+    dict: A dictionary where the keys are the triple signal IDs and the values are their counts.
     """
     logging.info('Starting to count triples')
+    
+    # Initialize the triples dictionary with zeros
+    freq_triples = { f'a{i}': {f'b{j}': {f'c{k}': 0 for k in range(1, k + 1)} for j in range(1, k + 1)} for i in range(1, k + 1)}
 
-    freq_triples = {}
-    for vala in [ 'a'+str(i) for i in range(1,k+1) ]:
-        freq_triples[vala] = {}
-        for valb in [ 'b'+str(i) for i in range(1,k+1) ]:
-            freq_triples[vala][valb] = {}
-            for valc in [ 'c'+str(i) for i in range(1,k+1) ]:
-                freq_triples[vala][valb][valc] = 0
+    # Filter sequences by length and count triples
+    valid_sequences = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    counter = len(valid_sequences)
 
-    counter=0
-    for index, row in df_clean.iterrows():
-        if ( len(row['Cluster6']) < minlength ):
-            continue
-        else:
-            counter += 1
-            for first, second, third in zip(row['Cluster6'], row['Cluster6'][1:], row['Cluster6'][2:]):
-                try:
-                    freq_triples['a'+str(first)]['b'+str(second)]['c'+str(third)] += 1
-                except KeyError as e:
-                    logging.debug(f'KeyError for {first} or {second} or {third}')
+    for sequence in valid_sequences['Cluster6']:
+        # Count triples using zip
+        for first, second, third in zip(sequence, sequence[1:], sequence[2:]):
+            key_a = f'a{first}'
+            key_b = f'b{second}'
+            key_c = f'c{third}'
+            if key_a in freq_triples and key_b in freq_triples[key_a] and key_c in freq_triples[key_a][key_b]:
+                freq_triples[key_a][key_b][key_c] += 1
+            else:
+                logging.debug(f'Invalid triple found: {first}, {second}, {third}')
 
     logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
     logging.info('Finished counting triples')
 
-    return(freq_triples)
+    return (freq_triples)
 
 
 def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
