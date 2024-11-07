@@ -3,6 +3,7 @@ import csv
 import json
 import logging
 from collections import Counter
+from typing import Dict
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -172,10 +173,6 @@ def count_singles(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
     Count the frequency of single signals that meet a minimum length requirement.
 
-    Parameters:
-    df_clean (pd.DataFrame): The input DataFrame.
-    minlength (int): The minimum length requirement for a single signal to be counted.
-
     Returns:
     dict: A dictionary where the keys are the single signal IDs and the values are their counts.
     """
@@ -189,33 +186,42 @@ def count_singles(df_clean: pd.DataFrame, minlength: int) -> dict:
 
 
 def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
+    """
+    Count the frequency of pairs signals that meet a minimum length requirement.
+
+    Returns:
+    dict: A dictionary where the keys are the pairs signal IDs and the values are their counts.
+    """
     logging.info('Starting to count pairs')
+    
+    # Initialize the pairs dictionary with zeros
+    freq_pairs = {f'a{i}': {f'b{j}': 0 for j in range(1, k + 1)} for i in range(1, k + 1)}
+    
+    # Filter sequences by length and count pairs
+    valid_sequences = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    counter = len(valid_sequences)
+    
+    for sequence in valid_sequences['Cluster6']:
+        # Count pairs using zip
+        for first, second in zip(sequence, sequence[1:]):
+            if f'a{first}' in freq_pairs and f'b{second}' in freq_pairs[f'a{first}']:
+                freq_pairs[f'a{first}'][f'b{second}'] += 1
+            else:
+                logging.debug(f'Invalid pair found: {first}, {second}')
 
-    freq_pairs = {}
-    for vala in [ 'a'+str(i) for i in range(1,k+1) ]:
-        freq_pairs[vala] = {}
-        for valb in [ 'b'+str(i) for i in range(1,k+1) ]:
-            freq_pairs[vala][valb] = 0
-
-    counter=0
-    for index, row in df_clean.iterrows():
-        if ( len(row['Cluster6']) < minlength ):
-            continue
-        else:
-            counter += 1
-            for first, second in zip(row['Cluster6'], row['Cluster6'][1:]):
-                try:
-                    freq_pairs['a'+str(first)]['b'+str(second)] += 1
-                except KeyError as e:
-                    logging.debug(f'KeyError for {first} or {second}')
-
-    logging.info(f'{counter} bouts were greater than or equal to {minlength} signals')
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
     logging.info('Finished counting pairs')
-
-    return(freq_pairs)
+    
+    return (freq_pairs)
 
 
 def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
+    """
+    Count the frequency of triples signals that meet a minimum length requirement.
+
+    Returns:
+    dict: A dictionary where the keys are the triples signal IDs and the values are their counts.
+    """
     logging.info('Starting to count triples')
 
     freq_triples = {}
@@ -238,7 +244,7 @@ def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
                 except KeyError as e:
                     logging.debug(f'KeyError for {first} or {second} or {third}')
 
-    logging.info(f'{counter} bouts were greater than or equal to {minlength} signals')
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
     logging.info('Finished counting triples')
 
     return(freq_triples)
@@ -277,48 +283,48 @@ def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
 
 
 def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
-   """
-   Plot heatmap of signal pair frequencies.
+    """
+    Plot heatmap of signal pair frequencies.
 
-   """
-   logging.info('Plotting pairs')
+    """
+    logging.info('Plotting pairs')
 
-   # Create and populate frequency matrix 
-   df = pd.DataFrame(0, columns=range(1,k+1), index=range(1,k+1), dtype=float)
-   for a_sig in data:
-       for b_sig in data[a_sig]:
-           row, col = int(b_sig[1:]), int(a_sig[1:])
-           df.loc[row, col] = int(data[a_sig][b_sig])
+    # Create and populate frequency matrix 
+    df = pd.DataFrame(0, columns=range(1,k+1), index=range(1,k+1), dtype=float)
+    for a_sig in data:
+        for b_sig in data[a_sig]:
+            row, col = int(b_sig[1:]), int(a_sig[1:])
+            df.loc[row, col] = int(data[a_sig][b_sig])
 
-   # Create plot
-   fig, ax = plt.subplots(figsize=(10,8))
-   im = ax.imshow(df, cmap='YlOrRd_r')
+    # Create plot
+    fig, ax = plt.subplots(figsize=(10,8))
+    im = ax.imshow(df, cmap='YlOrRd_r')
 
-   # Configure axes
-   ax.set_xticks(range(k))
-   ax.set_yticks(range(k)) 
-   ax.set_xticklabels(range(1,k+1), fontsize=10)
-   ax.set_yticklabels(range(1,k+1), fontsize=10)
-   ax.set_xlabel('Second Signal in Sequence')
-   ax.set_ylabel('First Signal in Sequence')
+    # Configure axes
+    ax.set_xticks(range(k))
+    ax.set_yticks(range(k)) 
+    ax.set_xticklabels(range(1,k+1), fontsize=10)
+    ax.set_yticklabels(range(1,k+1), fontsize=10)
+    ax.set_xlabel('Second Signal in Sequence')
+    ax.set_ylabel('First Signal in Sequence')
 
-   # Add title
-   if len(dfc.index) == 1:
-       row = dfc.iloc[0]
-       plt.suptitle('Frequency of Signal Pairs', fontsize=13)
-       plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
-                f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
-   else:
-       plt.title('Frequency of Signal Pairs')
+    # Add title
+    if len(dfc.index) == 1:
+        row = dfc.iloc[0]
+        plt.suptitle('Frequency of Signal Pairs', fontsize=13)
+        plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
+                    f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
+    else:
+        plt.title('Frequency of Signal Pairs')
 
-   # Add colorbar and save
-   cbar = fig.colorbar(im)
-   cbar.ax.set_ylabel('Frequency', rotation=-90, va='bottom')
-   
-   fig.tight_layout()
-   plt.savefig(basename + '_pairs.png')
+    # Add colorbar and save
+    cbar = fig.colorbar(im)
+    cbar.ax.set_ylabel('Frequency', rotation=-90, va='bottom')
+    
+    fig.tight_layout()
+    plt.savefig(basename + '_pairs.png')
 
-   return()
+    return()
 
 
 def plot_triples(data: dict, basename: str, dfc: pd.DataFrame):
