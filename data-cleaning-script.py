@@ -245,7 +245,7 @@ def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
     logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
     logging.info('Finished counting triples')
 
-    return freq_triples
+    return (freq_triples)
 
 
 def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
