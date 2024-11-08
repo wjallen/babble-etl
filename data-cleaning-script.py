@@ -2,10 +2,12 @@ import argparse
 import csv
 import json
 import logging
-from collections import Counter, defaultdict
+from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
+import numpy as np  
+import os 
 
 k=6
 
@@ -427,6 +429,50 @@ def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
 
     return()
 
+
+def setup_model_data(df_clean: pd.DataFrame, columns: list, basename: str):
+    """
+    Prepares data for a machine learning model by creating separate CSV files
+    for each user-specified column, including required columns (Babbles, Bout ID) in each file.
+    
+    Parameters:
+    df_clean (pandas.DataFrame): The input data.
+    columns (list): A list of column names to include.
+    basename (str): A base name for new CSV files.
+
+    Returns:
+    pandas.DataFrame: Ordered DataFrame with Babbles, Bout ID, and specified columns.
+    list: Paths to created CSV files
+    """
+    # Set up column order: required columns first, then user columns
+    required_cols = ['Babbles', 'Bout ID']
+    
+    # Validation
+    if not columns:
+        raise ValueError("Please provide at least one column.")
+    
+    missing_cols = [col for col in columns if col not in df_clean.columns]
+    if missing_cols:
+        raise ValueError(f"Columns not found: {', '.join(missing_cols)}")
+
+    # Create individual CSV files for each user-specified column
+    created_files = []
+    for col in columns:
+        # Create DataFrame with required columns plus the current column
+        col_data = df_clean[required_cols + [col]].copy()
+        
+        # Generate filename based on column name (sanitize the column name)
+        safe_colname = col.replace(' ', '_')
+        col_csv_path = f"{basename}_{safe_colname}_scm.csv"
+        
+        # Export to CSV
+        col_data.to_csv(col_csv_path, encoding='utf-8', index=False)
+        created_files.append(col_csv_path)
+        logging.info(f'Data exported for column {col}')
+    
+    return 
+
+
 def main():
 
     # Command line arguments
@@ -447,6 +493,8 @@ def main():
     parser.add_argument('-l', '--loglevel', type=str, required=False, default='WARNING',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help='set log level')
+    parser.add_argument('-sc', '--sequenceclass', type=lambda s: [item.strip() for item in s.split(',')], required=True, 
+                        help='Provide at least one column name, separated by commas, to configure the data input for the model, ex: "column1, column2, column3"')
     args = parser.parse_args()
     
     basename = 'CMBabble_Master'
@@ -463,12 +511,10 @@ def main():
 
     # Clean and Transform  
     df_clean = clean_and_transform_data(config_file, basename)
-        
     logging.info('Cleaning and Transforming data process completed successfully')
 
     if (args.dump == True):
         dump_bouts(df_clean, args.minlength, args.dump)
-
 
     # Analysis
     if (args.analysis == 'singles' or args.analysis == 'all'):
@@ -481,6 +527,12 @@ def main():
         analysis_quads(df_clean, args.minlength, basename)
     if (args.analysis == 'quints' or args.analysis == 'all'):
         analysis_quints(df_clean, args.minlength, basename)
+
+
+    # Sequence Classification Model Set Up
+    logging.info('Configuring the data input for the Sequence Classification Model')
+    columns = args.sequenceclass
+    setup_model_data(df_clean, columns, basename)
 
     return
 
