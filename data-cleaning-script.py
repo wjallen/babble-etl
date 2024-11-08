@@ -2,12 +2,10 @@ import argparse
 import csv
 import json
 import logging
-from collections import Counter
-from typing import Dict
+from collections import Counter, defaultdict
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np
 
 k=6
 
@@ -59,18 +57,18 @@ def clean_and_transform_data(config_file: str, basename: str):
     # logging.info('Filling missing values')
     # df = df.fillna(config["fill_na"])
     
-    # logging.info('Renaming columns')
-    # df = df.rename(columns=config["rename_columns"])
+    logging.info('Renaming columns')
+    df = df.rename(columns=config["rename_columns"])
     
     # logging.info('Casting columns to specified data types')
     # for column, dtype in config["data_types"].items():
     #     df[column] = df[column].astype(dtype)
     
     logging.info('Starting to format previously cleaned data')
-    logging.info('Grouping data by Bout ID and aggregating Cluster6 into lists')
-    df = df.groupby("Bout ID (sans subtype)", as_index=False).agg({
-        **{col: "first" for col in df.columns if col not in ["Bout ID (sans subtype)", "Cluster6"]},
-        "Cluster6": list
+    logging.info('Grouping data by Bout ID and aggregating Babbles into lists')
+    df = df.groupby("Bout ID", as_index=False).agg({
+        **{col: "first" for col in df.columns if col not in ["Bout ID", "Babbles"]},
+        "Babbles": list
     })
 
     logging.info('Writing clean and transformed data to csv file')
@@ -91,8 +89,8 @@ def dump_bouts(df_clean: pd.DataFrame, minlength: int, dump: bool):
     Returns:
     int: The number of bouts that were greater than or equal to the minimum length.
     """
-    logging.info('Starting to dump individual bouts (Cluster6)')
-    bout_list = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    logging.info('Starting to dump individual bouts (Babbles)')
+    bout_list = df_clean[df_clean['Babbles'].str.len() >= minlength]
     count = len(bout_list)
 
     if dump:
@@ -158,8 +156,6 @@ def analysis_triples(df_clean: pd.DataFrame, minlength: int, basename: str):
                 for itemc in triples[itema][itemb].keys():
                     writer.writerow([itema[1:], itemb[1:], itemc[1:], triples[itema][itemb][itemc]])
     logging.info('Triple sequence analysis complete')
-    plot_triples(triples, basename, df_clean)
-
     # First row of csv output is header, then contains Nx (NxN blocks)
     # So in the case of 39 signals, Rows 2-40 of output correspond to 
     # all bouts that start with signal 1, then is 39x39 matrix of second
@@ -169,25 +165,68 @@ def analysis_triples(df_clean: pd.DataFrame, minlength: int, basename: str):
     return
 
 
+def analysis_quads(df_clean: pd.DataFrame, minlength: int, basename: str):
+    if minlength < 4:
+        minlength = 4
+        logging.info('Setting minlength to 4 for quads analysis')
+
+    quads = count_quads(df_clean, minlength)
+
+    with open(basename + '_quads.json', 'w') as o:
+        json.dump(quads, o, indent=2)
+    with open(basename + '_quads.csv', 'w') as o:
+        writer = csv.writer(o)
+        writer.writerow(['signal1', 'signal2', 'signal3', 'signal4', 'freq'])
+        for a in quads.keys():
+            for b in quads[a].keys():
+                for c in quads[a][b].keys():
+                    for d in quads[a][b][c].keys():
+                        writer.writerow([a[1:], b[1:], c[1:], d[1:], quads[a][b][c][d]])
+
+    return
+
+
+def analysis_quints(df_clean: pd.DataFrame, minlength: int, basename: str):
+    if minlength < 5:
+        minlength = 5
+        logging.info('setting minlength to 5 for quints analysis')
+
+    quints = count_quints(df_clean, minlength)
+
+    with open(basename + '_quints.json', 'w') as o:
+        json.dump(quints, o, indent=2)
+    with open(basename + '_quints.csv', 'w') as o:
+        writer = csv.writer(o)
+        writer.writerow(['signal1', 'signal2', 'signal3', 'signal4', 'signal5', 'freq'])
+        for a in quints.keys():
+            for b in quints[a].keys():
+                for c in quints[a][b].keys():
+                    for d in quints[a][b][c].keys():
+                        for e in quints[a][b][c][d].keys():
+                            writer.writerow([a[1:], b[1:], c[1:], d[1:], e[1:], quints[a][b][c][d][e]])
+
+    return
+
+
 def count_singles(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
-    Count the frequency of single signals that meet a minimum length requirement.
+    Count the frequency of single signals (sequences of 1 elements) in a DataFrame.
 
     Returns:
     dict: A dictionary where the keys are the single signal IDs and the values are their counts.
     """
     logging.info('Starting to count singles')
-    signals = [sig for row in df_clean[df_clean['Cluster6'].str.len() >= minlength]['Cluster6'] for sig in row]
+    signals = [sig for row in df_clean[df_clean['Babbles'].str.len() >= minlength]['Babbles'] for sig in row]
     freq_singles = dict.fromkeys(range(1, k+1), 0)
     freq_singles.update(dict(Counter(signals)))
     logging.info('Finished counting singles')
 
-    return freq_singles
+    return (freq_singles)
 
 
 def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
-    Count the frequency of pairs signals that meet a minimum length requirement.
+    Count the frequency of pairs signals (sequences of 2 elements) in a DataFrame.
 
     Returns:
     dict: A dictionary where the keys are the pairs signal IDs and the values are their counts.
@@ -198,10 +237,10 @@ def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
     freq_pairs = {f'a{i}': {f'b{j}': 0 for j in range(1, k + 1)} for i in range(1, k + 1)}
     
     # Filter sequences by length and count pairs
-    valid_sequences = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    valid_sequences = df_clean[df_clean['Babbles'].str.len() >= minlength]
     counter = len(valid_sequences)
     
-    for sequence in valid_sequences['Cluster6']:
+    for sequence in valid_sequences['Babbles']:
         # Count pairs using zip
         for first, second in zip(sequence, sequence[1:]):
             if f'a{first}' in freq_pairs and f'b{second}' in freq_pairs[f'a{first}']:
@@ -217,7 +256,7 @@ def count_pairs(df_clean: pd.DataFrame, minlength: int) -> dict:
 
 def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
     """
-    Count the frequency of triple signals that meet a minimum length requirement.
+    Count the frequency of triple signals (sequences of 3 elements) in a DataFrame.
 
     Returns:
     dict: A dictionary where the keys are the triple signal IDs and the values are their counts.
@@ -228,10 +267,10 @@ def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
     freq_triples = { f'a{i}': {f'b{j}': {f'c{k}': 0 for k in range(1, k + 1)} for j in range(1, k + 1)} for i in range(1, k + 1)}
 
     # Filter sequences by length and count triples
-    valid_sequences = df_clean[df_clean['Cluster6'].str.len() >= minlength]
+    valid_sequences = df_clean[df_clean['Babbles'].str.len() >= minlength]
     counter = len(valid_sequences)
 
-    for sequence in valid_sequences['Cluster6']:
+    for sequence in valid_sequences['Babbles']:
         # Count triples using zip
         for first, second, third in zip(sequence, sequence[1:], sequence[2:]):
             key_a = f'a{first}'
@@ -246,6 +285,70 @@ def count_triples(df_clean: pd.DataFrame, minlength: int) -> dict:
     logging.info('Finished counting triples')
 
     return (freq_triples)
+
+
+def count_quads(df_clean: pd.DataFrame, minlength: int) -> dict:
+    logging.info('Starting to count quads')
+
+    freq_quads = {}
+    for vala in [ 'a'+str(i) for i in range(1,k+1) ]:
+        freq_quads[vala] = {}
+        for valb in [ 'b'+str(i) for i in range(1,k+1) ]:
+            freq_quads[vala][valb] = {}
+            for valc in [ 'c'+str(i) for i in range(1,k+1) ]:
+                freq_quads[vala][valb][valc] = {}
+                for vald in [ 'd'+str(i) for i in range(1,k+1) ]:
+                    freq_quads[vala][valb][valc][vald] = 0
+
+    counter=0
+    for index, row in df_clean.iterrows():
+        if ( len(row['Babbles']) < minlength ):
+            continue
+        else:
+            counter += 1
+            for first, second, third, fourth in zip(row['Babbles'], row['Babbles'][1:], row['Babbles'][2:], row['Babbles'][3:]):
+                try:
+                    freq_quads['a'+str(first)]['b'+str(second)]['c'+str(third)]['d'+str(fourth)] += 1
+                except KeyError as e:
+                    logging.debug(f'KeyError for {first} or {second} or {third} or {fourth}')
+
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
+    logging.info('Finished counting quads')
+
+    return(freq_quads)
+
+
+def count_quints(df_clean: pd.DataFrame, minlength: int) -> dict:
+    logging.info('Starting to count quints')
+
+    freq_quints = {}
+    for vala in [ 'a'+str(i) for i in range(1,k+1) ]:
+        freq_quints[vala] = {}
+        for valb in [ 'b'+str(i) for i in range(1,k+1) ]:
+            freq_quints[vala][valb] = {}
+            for valc in [ 'c'+str(i) for i in range(1,k+1) ]:
+                freq_quints[vala][valb][valc] = {}
+                for vald in [ 'd'+str(i) for i in range(1,k+1) ]:
+                    freq_quints[vala][valb][valc][vald] = {}
+                    for vale in [ 'e'+str(i) for i in range(1,k+1) ]:
+                        freq_quints[vala][valb][valc][vald][vale] = 0
+
+    counter=0
+    for index, row in df_clean.iterrows():
+        if ( len(row['Babbles']) < minlength ):
+            continue
+        else:
+            counter += 1
+            for first, second, third, fourth, fifth in zip(row['Babbles'], row['Babbles'][1:], row['Babbles'][2:], row['Babbles'][3:], row['Babbles'][4:]):
+                try:
+                    freq_quints['a'+str(first)]['b'+str(second)]['c'+str(third)]['d'+str(fourth)]['e'+str(fifth)] += 1
+                except KeyError as e:
+                    logging.debug(f'KeyError for {first} or {second} or {third} or {fourth} or {fifth}')
+
+    logging.info(f'Processed {counter} Bouts that are >= {minlength} signals')
+    logging.info('Finished counting quints')
+
+    return(freq_quints)
 
 
 def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
@@ -270,7 +373,7 @@ def plot_singles(data: dict, basename: str, dfc: pd.DataFrame):
 
     if len(dfc.index) == 1:
         plt.suptitle('Frequency of Individual Signals', fontsize=14)
-        plt.title(f"boutID={dfc.at[0,'Bout ID (sans subtype)']}; BoutLen={len(dfc.at[0,'Cluster6'])}; Tr={dfc.at[0,'treatment']}; Sex={dfc.at[0,'sex']}", fontsize=10)
+        plt.title(f"boutID={dfc.at[0,'Bout ID']}; BoutLen={len(dfc.at[0,'Babbles'])}; Tr={dfc.at[0,'treatment']}; Sex={dfc.at[0,'sex']}", fontsize=10)
     else:
         plt.title('Frequency of Individual Signals', fontsize=14)
 
@@ -310,7 +413,7 @@ def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
     if len(dfc.index) == 1:
         row = dfc.iloc[0]
         plt.suptitle('Frequency of Signal Pairs', fontsize=13)
-        plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
+        plt.title(f'boutID={row["Bout ID"]}; BoutLen={len(row["Babbles"])}; '
                     f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
     else:
         plt.title('Frequency of Signal Pairs')
@@ -323,28 +426,6 @@ def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
     plt.savefig(basename + '_pairs.png')
 
     return()
-
-
-def plot_triples(data: dict, basename: str, dfc: pd.DataFrame):
-    """
-    Plot heatmaps of triple signal frequencies, one subplot per first signal.
-    """
-    logging.info('Plotting triples')   
-
-    # Add title
-    if len(dfc.index) == 1:
-        row = dfc.iloc[0]
-        plt.suptitle('Frequency of Signal Pairs', fontsize=13)
-        plt.title(f'boutID={row["Bout ID (sans subtype)"]}; BoutLen={len(row["Cluster6"])}; '
-                    f'Tr={row["treatment"]}; Sex={row["sex"]}', fontsize=10)
-    else:
-       plt.title('Frequency of Signal Pairs')
-
-
-    # fig.tight_layout()
-    plt.savefig(basename + '_triples.png')
-
-
 
 def main():
 
@@ -396,10 +477,10 @@ def main():
         analysis_pairs(df_clean, args.minlength, basename)
     if (args.analysis == 'triples' or args.analysis == 'all'):
         analysis_triples(df_clean, args.minlength, basename)
-    # if (args.analysis == 'quads' or args.analysis == 'all'):
-    #     analysis_quads(df_clean, args.minlength, basename)
-    # if (args.analysis == 'quints' or args.analysis == 'all'):
-    #     analysis_quints(df_clean, args.minlength, basename)
+    if (args.analysis == 'quads' or args.analysis == 'all'):
+        analysis_quads(df_clean, args.minlength, basename)
+    if (args.analysis == 'quints' or args.analysis == 'all'):
+        analysis_quints(df_clean, args.minlength, basename)
 
     return
 

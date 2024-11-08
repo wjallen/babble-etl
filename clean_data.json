@@ -27,6 +27,9 @@
     ],
     "transformations": {},
     "fill_na": {},
-    "rename_columns": {},
+    "rename_columns": {
+        "Cluster6": "Babbles",
+        "Bout ID (sans subtype)": "Bout ID"
+    },
     "data_types": {}
 }
