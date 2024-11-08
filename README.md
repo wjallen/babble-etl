@@ -13,6 +13,7 @@ Below is an example of a JSON configuration file structure:
 # clean_data.json
 {
     "data_file": "path/to/your/input.csv",
+    
     "columns": [
         "Nest ID", 
         "Nestling ID", 
@@ -21,17 +22,21 @@ Below is an example of a JSON configuration file structure:
         "Treatment",
         "babbles"
     ],
+    
     "transformations": {
         "Nest ID": "strip",
         "Date": "to_datetime"
     },
+    
     "fill_na": {
         "numeric": 0,
         "string": ""
     },
+    
     "rename_columns": {
         "old_name": "new_name"
     },
+   
     "data_types": {
         "Nest ID": "str",
         "Nestling ID": "str",
