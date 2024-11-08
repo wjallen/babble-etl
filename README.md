@@ -12,11 +12,22 @@ Below is an example of a JSON configuration file structure:
 
 {
     "data_file": "",
-    "columns": [],
-    "transformations": { },
-    "fill_na": {`},
-    "rename_columns": { },
-    "data_types": { }
+    "columns": [
+        
+    ],
+    "transformations": {
+
+    },
+    "fill_na": {
+
+    },
+    "rename_columns": {
+
+    },
+    "data_types": {
+
+    }
+}
 }
 
 
