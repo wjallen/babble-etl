@@ -12,31 +12,21 @@ Below is an example of a JSON configuration file structure:
 
 {
     "data_file": "",
-    "columns": [
-        
-    ],
-    "transformations": {
-
-    },
-    "fill_na": {
-
-    },
-    "rename_columns": {
-
-    },
-    "data_types": {
-
-    }
+    "columns": [],
+    "transformations": { },
+    "fill_na": {`},
+    "rename_columns": { },
+    "data_types": { }
 }
 
 
 ## Key Fields in the JSON File
-    * data_file: Path to the raw CSV file to be processed.
-    * columns: List of columns to be included in the dataset.
-    * transformations: Dictionary specifying any transformations to be applied to the data.
-    * fill_na: Dictionary for handling missing values in specific columns.
-    * rename_columns: Dictionary mapping original column names to new names.
-    * data_types: Dictionary specifying data types for columns, if applicable.
+* data_file: Path to the raw CSV file to be processed.
+* columns: List of columns to be included in the dataset.
+* transformations: Dictionary specifying any transformations to be applied to the data.
+* fill_na: Dictionary for handling missing values in specific columns.
+* rename_columns: Dictionary mapping original column names to new names.
+* data_types: Dictionary specifying data types for columns, if applicable.
 
 
 ## Command Line Arguments
@@ -78,12 +68,12 @@ python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump
 ```
 
 ### Explanation:
-    * Reads configuration from config.json.
-    * Minimum sequence length is set to 3.
-    * Runs k-means clustering with 5 clusters.
-    * Performs pair analysis.
-    * Logs messages at INFO level.
-    * Dumps sequences into a plot.
+* Reads configuration from config.json.
+* Minimum sequence length is set to 3.
+* Runs k-means clustering with 5 clusters.
+* Performs pair analysis.
+* Logs messages at INFO level.
+* Dumps sequences into a plot.
 
 
 ## Logging
