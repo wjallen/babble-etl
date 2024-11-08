@@ -10,7 +10,7 @@ This documentation outlines the process of data extraction, cleaning, transforma
 ## JSON Configuration Structure
 Below is an example of a JSON configuration file structure:
 
-# clean_data.json
+## clean_data.json
 {
     "data_file": "path/to/your/input.csv",
     
@@ -20,7 +20,6 @@ Below is an example of a JSON configuration file structure:
         "Nestling", 
         "Sex", 
         "Treatment",
-        "babbles"
     ],
     
     "transformations": {
@@ -40,7 +39,6 @@ Below is an example of a JSON configuration file structure:
     "data_types": {
         "Nest ID": "str",
         "Nestling ID": "str",
-        "babbles": "str"
     }
 }
 
@@ -91,7 +89,7 @@ The following command-line arguments can be used to run the script:
 Run the script using the following command:
 
 ```bash
-python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump -- sc "Sex, Treatment"
+python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump --sc "Sex, Treatment"
 ```
 
 ### Explanation:
