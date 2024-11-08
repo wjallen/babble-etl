@@ -58,14 +58,15 @@ Below is an example of a JSON configuration file structure:
 
 The following command-line arguments can be used to run the script:
 
-| Argument         | Type   | Required | Default | Description                                                                                   |
-|------------------|--------|----------|---------|-----------------------------------------------------------------------------------------------|
-| -i, --input      | String | Yes      | N/A     | Path to the input JSON file for data cleaning and transformation steps.                       |
-| -m, --minlength  | Int    | No       | 2       | Minimum length for sequences used in pair analysis.                                           |
-| -k, --kmeans     | Int    | No       | 6       | Number of clusters for k-means clustering.                                                    |
-| -a, --analysis   | String | No       | N/A     | Type of frequency analysis to perform (choices: singles, pairs, triples, quads, quints, all). |
-| -d, --dump       | Flag   | No       | False   | Flag to indicate if sequences should be dumped into a plot.                                   |
-| -l, --loglevel   | String | No       | WARNING | Log level for script execution (choices: DEBUG, INFO, WARNING, ERROR, CRITICAL).              |
+| Argument             | Type   | Required | Default | Description                                                                                     |
+|----------------------|--------|----------|---------|-------------------------------------------------------------------------------------------------|
+| -i, --input          | String | Yes      | N/A     | Path to the input JSON file for data cleaning and transformation steps.                         |
+| -m, --minlength      | Int    | No       | 2       | Minimum length for sequences used in pair analysis.                                             |
+| -k, --kmeans         | Int    | No       | 6       | Number of clusters for k-means clustering.                                                      |
+| -a, --analysis       | String | No       | N/A     | Type of frequency analysis to perform (choices: singles, pairs, triples, quads, quints, all).   |
+| -d, --dump           | Flag   | No       | False   | Flag to indicate if sequences should be dumped into a plot.                                     |
+| -l, --loglevel       | String | No       | WARNING | Log level for script execution (choices: DEBUG, INFO, WARNING, ERROR, CRITICAL).                |
+| -sc, --sequenceclass | String | No       | N/A     | Name of Columns in Data Frame to configure the data input for the Sequence Classification Model |
 
 
 ## Script Workflow
@@ -82,14 +83,15 @@ The following command-line arguments can be used to run the script:
     * Log messages are configured based on the --loglevel argument for better tracking and debugging.
 6. **Dumping Sequences:**
     * If --dump is specified, the processed sequences are saved for further inspection.
-
+7. **Sequence Classification:**
+    * Depending on the --sequenceclass argument, the script performs setting up the df and cvs for the Sequence Classification Model
 
 ## Example Usage
 
 Run the script using the following command:
 
 ```bash
-python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump
+python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump -- sc "Sex, Treatment"
 ```
 
 ### Explanation:
@@ -99,6 +101,7 @@ python script_name.py -i config.json -m 3 -k 5 -a pairs -l INFO --dump
 * Performs pair analysis.
 * Logs messages at INFO level.
 * Dumps sequences into a plot.
+* Makes corresponding df and cvs for Sex and Treatment
 
 
 ## Logging
