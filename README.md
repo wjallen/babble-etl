@@ -82,7 +82,7 @@ The following command-line arguments can be used to run the script:
 6. **Dumping Sequences:**
     * If --dump is specified, the processed sequences are saved for further inspection.
 7. **Sequence Classification:**
-    * Depending on the --sequenceclass argument, the script performs setting up the df and cvs for the Sequence Classification Model
+    * Depending on the --sequenceclass argument, the script performs setting up the df and csv for the Sequence Classification Model
 
 ## Example Usage
 
