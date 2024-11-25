@@ -6,9 +6,6 @@ from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np  
-import os 
-
 k=6
 
 # def apply_column_transformation(df, column, transformation_name):
