@@ -112,17 +112,16 @@ Logs are configured to display timestamps, log levels, and messages to help trac
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 ```
 
-
 ## Return Value
 
 The script does not return a value but writes logs and, if specified, dumps sequence outputs for plotting.
 
 
 ## ANOVA Testing
-Analysis of variance (ANOVA) is an extremely important method in exploratory and confirmatory data analysis. 
-ANOVA test can be a valuable tool for exploratory data analysis (EDA) when you want to identify potential differences in the mean of a continuous variable across different categorical groups within your dataset, helping you explore potential relationships and patterns between variables.
+Analysis of variance (ANOVA) is an extremely important method in exploratory and confirmatory data analysis. ANOVA test can be a valuable tool for exploratory data analysis (EDA) when you want to identify potential differences in the mean of a continuous variable across different categorical groups within your dataset, helping you explore potential relationships and patterns between variables.
 
-Why ANOVA is useful in EDA:
+#### Why ANOVA is useful in EDA:
+
 **Group comparisons:**
 When exploring a dataset, ANOVA can quickly reveal whether there are statistically significant differences between various groups, allowing you to focus your analysis on those areas. 
 
