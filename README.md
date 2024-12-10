@@ -122,14 +122,26 @@ Analysis of variance (ANOVA) is an extremely important method in exploratory and
 
 #### Why ANOVA is useful in EDA:
 
-**Group comparisons:**
+1. **Group comparisons:**
 When exploring a dataset, ANOVA can quickly reveal whether there are statistically significant differences between various groups, allowing you to focus your analysis on those areas. 
 
-**Identifying potential relationships:**
+2. **Identifying potential relationships:**
 By comparing means across different groups, ANOVA can highlight potential relationships between categorical variables and continuous variables, prompting further investigation. 
 
-**Data exploration:**
+3. **Data exploration:**
 Even if you don't have a specific hypothesis in mind, running an ANOVA can help you discover interesting patterns in your data that might warrant further exploration. 
 
-**Data visualization:**
+4. **Data visualization:**
 The results of an ANOVA can be used to inform visualizations like box plots or bar charts, which can visually represent the differences between groups. 
+
+####  When to Use ANOVA in EDA
+* Independent Variable: Categorical (e.g., sex, treatment groups).
+* Dependent Variable: Continuous (e.g., vocalization frequency or amplitude).
+
+#### How to Use ANOVA for EDA
+1. One-Way ANOVA: Test differences among means for one categorical independent variable.
+    - Example: Do parrot vocalizations differ based on sex (male vs. female)?
+2. Two-Way ANOVA: Explore interaction effects between two categorical independent variables.
+    - Example: Is there an interaction between sex and treatment on vocalization patterns?
+3. Post-Hoc Tests: If the ANOVA reveals significant differences, use post-hoc tests (like Tukey's HSD) to determine which groups differ from each other.
+4. Visualization: Complement ANOVA results with visualizations (e.g., boxplots, violin plots) to help interpret differences in group means.
