@@ -139,9 +139,9 @@ The results of an ANOVA can be used to inform visualizations like box plots or b
 * Dependent Variable: Continuous (e.g., vocalization frequency or amplitude).
 
 #### How to Use ANOVA for EDA
-1. One-Way ANOVA: Test differences among means for one categorical independent variable.
+1. **One-Way ANOVA:** Test differences among means for one categorical independent variable.
     - Example: Do parrot vocalizations differ based on sex (male vs. female)?
-2. Two-Way ANOVA: Explore interaction effects between two categorical independent variables.
+2. **Two-Way ANOVA:** Explore interaction effects between two categorical independent variables.
     - Example: Is there an interaction between sex and treatment on vocalization patterns?
-3. Post-Hoc Tests: If the ANOVA reveals significant differences, use post-hoc tests (like Tukey's HSD) to determine which groups differ from each other.
-4. Visualization: Complement ANOVA results with visualizations (e.g., boxplots, violin plots) to help interpret differences in group means.
+3. **Post-Hoc Tests:** If the ANOVA reveals significant differences, use post-hoc tests (like Tukey's HSD) to determine which groups differ from each other.
+4. **Visualization:** Complement ANOVA results with visualizations (e.g., boxplots, violin plots) to help interpret differences in group means.
