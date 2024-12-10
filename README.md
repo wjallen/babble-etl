@@ -11,6 +11,7 @@ This documentation outlines the process of data extraction, cleaning, transforma
 Below is an example of a JSON configuration file structure:
 
 ## clean_data.json
+```console
 {
     "data_file": "path/to/your/input.csv",
     
@@ -41,6 +42,7 @@ Below is an example of a JSON configuration file structure:
         "Nestling ID": "str",
     }
 }
+```
 
 
 ## Key Fields in the JSON File
