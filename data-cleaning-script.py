@@ -6,9 +6,6 @@ from collections import Counter
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import numpy as np  
-import os 
-
 k=6
 
 # def apply_column_transformation(df, column, transformation_name):
@@ -493,7 +490,7 @@ def main():
     parser.add_argument('-l', '--loglevel', type=str, required=False, default='WARNING',
                         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'],
                         help='set log level')
-    parser.add_argument('-sc', '--sequenceclass', type=lambda s: [item.strip() for item in s.split(',')], required=True, 
+    parser.add_argument('-sc', '--sequenceclass', type=lambda s: [item.strip() for item in s.split(',')], required=False, 
                         help='Provide at least one column name, separated by commas, to configure the data input for the model, ex: "column1, column2, column3"')
     args = parser.parse_args()
     
