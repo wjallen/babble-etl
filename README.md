@@ -10,8 +10,9 @@ This documentation outlines the process of data extraction, cleaning, transforma
 ## JSON Configuration Structure
 Below is an example of a JSON configuration file structure:
 
-## clean_data.json
 ```console
+clean_data.json
+
 {
     "data_file": "path/to/your/input.csv",
     
@@ -43,7 +44,6 @@ Below is an example of a JSON configuration file structure:
     }
 }
 ```
-
 
 ## Key Fields in the JSON File
 * data_file: Path to the raw CSV file to be processed.
@@ -116,3 +116,21 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 ## Return Value
 
 The script does not return a value but writes logs and, if specified, dumps sequence outputs for plotting.
+
+
+## ANOVA Testing
+Analysis of variance (ANOVA) is an extremely important method in exploratory and confirmatory data analysis. 
+ANOVA test can be a valuable tool for exploratory data analysis (EDA) when you want to identify potential differences in the mean of a continuous variable across different categorical groups within your dataset, helping you explore potential relationships and patterns between variables.
+
+Why ANOVA is useful in EDA:
+**Group comparisons:**
+When exploring a dataset, ANOVA can quickly reveal whether there are statistically significant differences between various groups, allowing you to focus your analysis on those areas. 
+
+**Identifying potential relationships:**
+By comparing means across different groups, ANOVA can highlight potential relationships between categorical variables and continuous variables, prompting further investigation. 
+
+**Data exploration:**
+Even if you don't have a specific hypothesis in mind, running an ANOVA can help you discover interesting patterns in your data that might warrant further exploration. 
+
+**Data visualization:**
+The results of an ANOVA can be used to inform visualizations like box plots or bar charts, which can visually represent the differences between groups. 
