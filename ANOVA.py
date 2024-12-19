@@ -7,14 +7,20 @@ from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 from multiprocessing import Pool, cpu_count
 
-
-# Function to clean and prepare the entire dataset or a chunk
 def clean_and_prepare_data(chunk):
+    """
+    Retrieve data from csv file to clean and prepare the entire dataset
+    :param chunk: The dataset
+    :return: The dataset that are clean  and prepare
+
+    TODO: Fix the date columns to datetime, ANOVA can only read in certain formate
+    """
+
     # Convert date columns to datetime (vectorized)
-    date_columns = ['Hatch date', 'Fledge date', 'Date on vocalization']
-    for col in date_columns:
-        if col in chunk.columns:
-            chunk[col] = pd.to_datetime(chunk[col], errors='coerce')
+    # date_columns = ['Hatch date', 'Fledge date', 'Date on vocalization']
+    # for col in date_columns:
+    #     if col in chunk.columns:
+    #         chunk[col] = pd.to_datetime(chunk[col], errors='coerce')
 
     # Replace spaces with underscores in column names
     chunk.columns = chunk.columns.str.replace(' ', '_')
@@ -44,8 +50,13 @@ def clean_and_prepare_data(chunk):
     return chunk
 
 
-# Function to precompute header combinations
 def get_header_combinations(csv_file, exclude_headers=[]):
+    """
+    Retrieve data from csv file to extract headers that will used and some to exclued
+    :param csv_file: The path to the csv_file
+    :param exclude_headers: A list of headers to remove if needed
+    :return: A list of combinations to preform ANOVA Testing
+    """
     df = pd.read_csv(csv_file, nrows=0)  # Only reads headers
     headers = df.columns.str.replace(' ', '_').tolist()
 
@@ -59,8 +70,13 @@ def get_header_combinations(csv_file, exclude_headers=[]):
     return all_combinations
 
 
-# Function to run ANOVA in parallel
 def run_anova_parallel(args):
+    """
+    Run the ANOVA in parallel
+    Retrieves info need to format the ANOVA Formula to run Testing
+    :param args: A list of headers to remove if needed
+    :return: The Anova Result from testing 
+    """
     chunk, combination, response_col = args
     try:
         data = chunk[list(combination) + [response_col]].dropna()
@@ -78,8 +94,15 @@ def run_anova_parallel(args):
         return None
 
 
-# Process CSV in chunks
 def process_csv(csv_file, header_combinations, response_col='Babble_Length', chunksize=50000):
+    """ 
+    Retrieves all vars needed to get results from run_anova_parallel to Process CSV in chunks
+    :param csv_file: Path to CVS File
+    :param header_combinations: A list of combinations of headers 
+    :param response_col: Response Col for testing (Dependent Var)
+    :param chunksize: Size of datasets being 
+    :return: CSV file of the Anova Result
+    """
     results = []
     chunk_iter = pd.read_csv(csv_file, chunksize=chunksize)
 
@@ -99,10 +122,24 @@ def process_csv(csv_file, header_combinations, response_col='Babble_Length', chu
     # Save all results at once
     pd.concat(results).to_csv('partial_anova_results.csv', index=False)
 
+def filter_significant_results(file='partial_anova_results.csv', output_file='filtered_file.csv'):
+    """ 
+    Retrieves data in CSV file to filter (keep) significant results
+    :param file: Path to CVS File
+    :param output_file: Path to Output CVS File
+    :return: Filter CVS File
+    """
+    # Filter rows where PR(>F) is less than or equal to 0.05
+    df = pd.read_csv(file)
+    df_filtered = df[df['PR(>F)'].notna() & (df['PR(>F)'] <= 0.05)]
+    
+    df_filtered.to_csv(output_file, index=False)
+    print(f"\nSignificant ANOVA results saved to '{output_file}'")
 
-# Main block
+
 if __name__ == "__main__":
-    csv_file = "CMBabble_Master_clean.csv"  # Replace with your file path
+    # csv_file = "CMBabble_Master_clean.csv" 
+    csv_file = "CMBabble_Master_combined.csv" 
     exclude_headers = ["Babbles", "Bout_ID", "Notes", "Raven work", "Date_on_vocalization_2", ""]
     response_col = 'Babble_Length'
 
