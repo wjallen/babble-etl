@@ -1,103 +1,116 @@
 import pandas as pd
+import ast
+import gc
+
+from itertools import combinations
 from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
-import argparse
-import logging
-import ast
+from multiprocessing import Pool, cpu_count
 
-# Initialize logging
-logging.basicConfig(level=logging.INFO)
 
-# Function to preprocess the data
-def preprocess_data(data):
-    logging.info('Preprocessing data...')
-
-    # Map 'Sex' and 'Treatment' columns to numeric values
-    data['Sex'] = data['Sex'].map({'M': 0, 'F': 1})
-    data['Treatment'] = data['Treatment'].map({'CONTROL': 0, 'CORT': 1, 'OIL': 2})
-
-    # Convert strings in 'Babbles' column to lists
-    data['Babbles'] = data['Babbles'].apply(lambda x: ast.literal_eval(x) if isinstance(x, str) else x)
-
-    # Convert date columns to datetime
+# Function to clean and prepare the entire dataset or a chunk
+def clean_and_prepare_data(chunk):
+    # Convert date columns to datetime (vectorized)
     date_columns = ['Hatch date', 'Fledge date', 'Date on vocalization']
     for col in date_columns:
-        data[col] = pd.to_datetime(data[col], errors='coerce')
+        if col in chunk.columns:
+            chunk[col] = pd.to_datetime(chunk[col], errors='coerce')
 
-    # Extract statistics from 'Babbles' column
-    def process_babbles(babble_list):
-        return {
-            'babble_count': len(babble_list),
-            'babble_mean': sum(babble_list) / len(babble_list) if babble_list else 0,
-            'babble_sum': sum(babble_list),
-        }
+    # Replace spaces with underscores in column names
+    chunk.columns = chunk.columns.str.replace(' ', '_')
 
-    babbles_stats = data['Babbles'].apply(process_babbles)
-    data['Babble Length'] = babbles_stats.apply(lambda x: x['babble_count'])
-    data['Babble Mean'] = babbles_stats.apply(lambda x: x['babble_mean'])
-    data['Babble Sum'] = babbles_stats.apply(lambda x: x['babble_sum'])
+    # Extract statistics from 'Babbles' column (optimized with vectorized processing)
+    if 'Babbles' in chunk.columns:
+        def process_babbles_vectorized(babbles):
+            try:
+                babble_list = ast.literal_eval(babbles)
+                if isinstance(babble_list, list):
+                    return len(babble_list), sum(babble_list) / len(babble_list), sum(babble_list)
+                else:
+                    return 0, 0, 0
+            except (ValueError, SyntaxError):
+                return 0, 0, 0
 
-    logging.info('Data preprocessing completed.')
-    return data
+        babble_stats = chunk['Babbles'].apply(process_babbles_vectorized)
+        chunk[['Babble_Length', 'Babble_Mean', 'Babble_Sum']] = pd.DataFrame(babble_stats.tolist(), index=chunk.index)
 
-# Function to compute ANOVA
-def compute_anova(data, factors, response):
-    # Ensure the response is the last column in the formula
-    formula = f"{response} ~ " + " * ".join(factors)
-    logging.info(f"ANOVA Formula: {formula}")
-    
-    # Fit the model
-    model = ols(formula, data=data).fit()
-    
-    # Compute ANOVA
-    anova_result = anova_lm(model)
-    logging.info("\nANOVA Results:")
-    logging.info(anova_result)
-    
-    # Check if p-value is significant
-    significant = anova_result["PR(>F)"].min() < 0.05
-    logging.info(f"\nSignificant P-Value Found: {'Yes' if significant else 'No'}")
-    return anova_result
+    # Rename columns
+    chunk = chunk.rename(columns={
+        'Bout_no.': 'Bout_number',
+        'No._eggs_hatched_from_nest': 'Number_eggs_hatched_from_nest',
+        'No._birds_fledged_from_nest': 'Number_birds_fledged_from_nest'
+    })
 
-def main():
-    # Parse command-line arguments
-    parser = argparse.ArgumentParser(description="Perform ANOVA on user-selected columns.")
-    parser.add_argument("-i", "--input", type=str, required=True, help="Path to the CSV file")
-    parser.add_argument("-f", "--factors", nargs='+', required=True, help="List of independent variables separated by space.")
-    args = parser.parse_args()
+    return chunk
 
-    # Hardcoded dependent variable (response)
-    response = "Babble_Length"
 
-    # Load the dataset or use the default
-    logging.info('Reading and preparing data for analysis')
-    if args.input:
-        data = pd.read_csv(args.input)
-    else:
-        logging.warning("No data file provided.")
+# Function to precompute header combinations
+def get_header_combinations(csv_file, exclude_headers=[]):
+    df = pd.read_csv(csv_file, nrows=0)  # Only reads headers
+    headers = df.columns.str.replace(' ', '_').tolist()
 
-    # Preprocess the data
-    data = preprocess_data(data)
+    filtered_headers = [header for header in headers if header not in exclude_headers]
 
-    print(args.factors)
+    # Precompute all header combinations
+    all_combinations = [
+        comb for r in range(1, len(filtered_headers) + 1) 
+        for comb in combinations(filtered_headers, r)
+    ]
+    return all_combinations
 
-    # Ensure column names are standardized, ANOVA cnt read spaces
-    data.columns = data.columns.str.replace(' ', '_')
-    args.factors = [factor.replace(' ', '_') for factor in args.factors]
 
-    # Extract selected columns
-    selected_columns = args.factors + [response]
+# Function to run ANOVA in parallel
+def run_anova_parallel(args):
+    chunk, combination, response_col = args
     try:
-        selected_data = data[selected_columns]
-    except KeyError as e:
-        logging.warning(f"Error: {e}")
-        logging.warning("Ensure the selected columns exist in the DataFrame or CSV file.")
-        return
+        data = chunk[list(combination) + [response_col]].dropna()
+        if data.empty:
+            return None
 
-    logging.info(f"Columns selected for ANOVA: {selected_columns}")
-    
-    # Compute ANOVA
-    compute_anova(selected_data, args.factors, response)
+        # Construct formula and run ANOVA
+        formula = f'{response_col} ~ ' + ' * '.join(combination)
+        model = ols(formula, data=data).fit()
+        anova_result = anova_lm(model)
+        anova_result['Combination'] = str(combination)
+        return anova_result
+    except Exception as e:
+        print(f"Error with combination {combination}: {e}")
+        return None
 
+
+# Process CSV in chunks
+def process_csv(csv_file, header_combinations, response_col='Babble_Length', chunksize=50000):
+    results = []
+    chunk_iter = pd.read_csv(csv_file, chunksize=chunksize)
+
+    for chunk in chunk_iter:
+        chunk = clean_and_prepare_data(chunk)
+
+        # Prepare arguments for parallel processing
+        args = [(chunk, combo, response_col) for combo in header_combinations]
+
+        # Use multiprocessing for ANOVA
+        with Pool(cpu_count()) as pool:
+            partial_results = pool.map(run_anova_parallel, args)
+            results.extend([res for res in partial_results if res is not None])
+
+        gc.collect()
+
+    # Save all results at once
+    pd.concat(results).to_csv('partial_anova_results.csv', index=False)
+
+
+# Main block
 if __name__ == "__main__":
-    main()
+    csv_file = "CMBabble_Master_clean.csv"  # Replace with your file path
+    exclude_headers = ["Babbles", "Bout_ID", "Notes", "Raven work", "Date_on_vocalization_2", ""]
+    response_col = 'Babble_Length'
+
+    # Precompute header combinations
+    header_combinations = get_header_combinations(csv_file, exclude_headers)
+
+    # Process the file and run ANOVA
+    process_csv(csv_file, header_combinations, response_col)
+
+    # Filter significant results
+    filter_significant_results(file='partial_anova_results.csv', output_file='filtered_file.csv')
