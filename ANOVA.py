@@ -43,8 +43,8 @@ def clean_and_prepare_data(chunk):
     # Rename columns
     chunk = chunk.rename(columns={
         'Bout_no.': 'Bout_number',
-        'No._eggs_hatched_from_nest': 'Number_eggs_hatched_from_nest',
-        'No._birds_fledged_from_nest': 'Number_birds_fledged_from_nest'
+        # 'No._eggs_hatched_from_nest': 'Number_eggs_hatched_from_nest',
+        # 'No._birds_fledged_from_nest': 'Number_birds_fledged_from_nest'
     })
 
     return chunk
