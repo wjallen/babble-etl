@@ -96,11 +96,11 @@ def run_anova_parallel(args):
         model = ols(formula, data=data).fit()
         anova_result = anova_lm(model)
 
-        # Add meaningful names for effects (Interaction effect between two+ variables )
+        # Add meaningful names for effects (Interaction effect between 2+ variables )
         anova_result['Interaction Effects'] = anova_result.index
         anova_result['Combination'] = str(combination)
         
-        return anova_result.reset_index(drop=True)
+        return anova_result
     except Exception as e:
         print(f"Error with combination {combination}: {e}")
         return None
@@ -135,20 +135,30 @@ def process_csv(csv_file, header_combinations, response_col='Babble_Length', chu
     logging.info('Saving ANOVA results to partial_anova_results.csv\n')
     pd.concat(results).to_csv('partial_anova_results.csv', index=False)
 
+
 def filter_significant_results(file='partial_anova_results.csv', output_file='filtered_file.csv'):
-    """ 
-    Retrieves data in CSV file to filter (keep) significant results
-    :param file: Path to CVS File
-    :param output_file: Path to Output CVS File
-    :return: Filter CVS File
     """
-    # Filter rows where PR(>F) is less than or equal to 0.05
+    Filters rows where PR(>F) is <= 0.05, removes duplicates based on 'Interaction Effects',
+    and keeps the one with the lowest PR(>F).
+    :param file: Path to CSV file.
+    :param output_file: Path to output CSV file.
+    :return: Filtered and deduplicated CSV file.
+    """
     logging.info('Starting to filter rows where PR(>F) is less than or equal to 0.05')
     df = pd.read_csv(file)
+
+    # Filter rows where PR(>F) is not NaN and <= 0.05
     df_filtered = df[df['PR(>F)'].notna() & (df['PR(>F)'] <= 0.05)]
+    
+    # Sort by 'Interaction Effects' and 'PR(>F)' to then Remove duplicates based on 'Interaction Effects', keeping the one with the lowest PR(>F)
+    df_filtered = df_filtered.sort_values(by=['Interaction Effects', 'PR(>F)'])
+    df_filtered = df_filtered.drop_duplicates(subset=['Interaction Effects'], keep='first')
+
+    # Sort the final results by PR(>F) in ascending order
+    df_filtered = df_filtered.sort_values(by='PR(>F)', ascending=True).reset_index(drop=True)
 
     df_filtered.to_csv(output_file, index=False)
-    logging.info(f"Significant ANOVA results saved to '{output_file}'")
+    logging.info(f"Significant and deduplicated results saved to '{output_file}'")
 
 
 if __name__ == "__main__":
