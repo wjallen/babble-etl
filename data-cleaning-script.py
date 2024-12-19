@@ -8,26 +8,26 @@ import matplotlib.pyplot as plt
 import pandas as pd
 k=6
 
-# def apply_column_transformation(df, column, transformation_name):
-#     """
-#     Applies the specified transformation to the given column in the DataFrame.
-#     Parameters:
-#     df (pandas.DataFrame): The input DataFrame.
-#     column (str): The name of the column to transform.
-#     transformation_name (str): The name of the transformation to apply.
-#     Returns:
-#     pandas.DataFrame: The DataFrame with the column transformed.
-#     """
+def apply_column_transformation(df, column, transformation_name):
+    """
+    Applies the specified transformation to the given column in the DataFrame.
+    Parameters:
+    df (pandas.DataFrame): The input DataFrame.
+    column (str): The name of the column to transform.
+    transformation_name (str): The name of the transformation to apply.
+    Returns:
+    pandas.DataFrame: The DataFrame with the column transformed.
+    """
 
-#     logging.info(f'Applying {transformation_name} transformation to column {column}')
-#     transformations = {
-#         "strip": lambda x: x.str.strip(),
-#         "to_datetime": lambda x: pd.to_datetime(x)
-#     }
-#     transformation = transformations.get(transformation_name, None)
-#     if transformation:
-#         df[column] = transformation(df[column])
-#     return df
+    logging.info(f'Applying {transformation_name} transformation to column {column}')
+    transformations = {
+        "strip": lambda x: x.str.strip(),
+        "to_datetime": lambda x: pd.to_datetime(x)
+    }
+    transformation = transformations.get(transformation_name, None)
+    if transformation:
+        df[column] = transformation(df[column])
+    return df
 
 def clean_and_transform_data(config_file: str, basename: str):
     """
@@ -49,9 +49,9 @@ def clean_and_transform_data(config_file: str, basename: str):
     logging.info('Selecting specified columns')
     df = df[config["columns"]]
     
-    # logging.info('Applying custom transformations')
-    # for column, transformation in config["transformations"].items():
-    #     df = apply_column_transformation(df, column, transformation)
+    logging.info('Applying custom transformations')
+    for column, transformation in config["transformations"].items():
+        df = apply_column_transformation(df, column, transformation)
     
     # logging.info('Filling missing values')
     # df = df.fillna(config["fill_na"])
@@ -482,8 +482,6 @@ def setup_model_data(df_clean: pd.DataFrame, columns: list, basename: str):
     return created_files
 
  
-
-
 def main():
 
     # Command line arguments
@@ -524,7 +522,8 @@ def main():
     df_clean = clean_and_transform_data(config_file, basename)
     logging.info('Cleaning and Transforming data process completed successfully')
 
-    if (args.dump == True):
+    # Dumps
+    if (args.dump):
         dump_bouts(df_clean, args.minlength, args.dump)
 
     # Analysis
@@ -539,11 +538,11 @@ def main():
     if (args.analysis == 'quints' or args.analysis == 'all'):
         analysis_quints(df_clean, args.minlength, basename)
 
-
     # Sequence Classification Model Set Up
-    logging.info('Configuring the data input for the Sequence Classification Model')
-    columns = args.sequenceclass
-    setup_model_data(df_clean, columns, basename)
+    if (args.sequenceclass):
+        logging.info('Configuring the data input for the Sequence Classification Model')
+        columns = args.sequenceclass
+        setup_model_data(df_clean, columns, basename)
 
     return
 

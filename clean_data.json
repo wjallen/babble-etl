@@ -29,7 +29,9 @@
     "fill_na": {},
     "rename_columns": {
         "Cluster6": "Babbles",
-        "Bout ID (sans subtype)": "Bout ID"
+        "Bout ID (sans subtype)": "Bout ID", 
+        "No. eggs hatched from nest": "Number eggs hatched from nest",
+        "No. birds fledged from nest": "Number birds fledged from nest"
     },
     "data_types": {}
 }
