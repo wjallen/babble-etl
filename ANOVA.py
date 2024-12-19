@@ -144,7 +144,7 @@ def filter_significant_results(file='partial_anova_results.csv', output_file='fi
     df_filtered = df[df['PR(>F)'].notna() & (df['PR(>F)'] <= 0.05)]
 
     df_filtered.to_csv(output_file, index=False)
-    logging.info(f"\nSignificant ANOVA results saved to '{output_file}'")
+    logging.info(f"Significant ANOVA results saved to '{output_file}'")
 
 
 if __name__ == "__main__":
