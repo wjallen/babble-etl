@@ -1,11 +1,15 @@
 import pandas as pd
 import ast
 import gc
+import logging
 
 from itertools import combinations
 from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 from multiprocessing import Pool, cpu_count
+
+# Initialize logging
+logging.basicConfig(level=logging.INFO)
 
 def clean_and_prepare_data(chunk):
     """
@@ -15,6 +19,8 @@ def clean_and_prepare_data(chunk):
 
     TODO: Fix the date columns to datetime, ANOVA can only read in certain formate
     """
+    logging.info('Starting to retrieve data to clean and prepare the entire dataset')
+
 
     # Convert date columns to datetime (vectorized)
     # date_columns = ['Hatch date', 'Fledge date', 'Date on vocalization']
@@ -43,10 +49,9 @@ def clean_and_prepare_data(chunk):
     # Rename columns
     chunk = chunk.rename(columns={
         'Bout_no.': 'Bout_number',
-        # 'No._eggs_hatched_from_nest': 'Number_eggs_hatched_from_nest',
-        # 'No._birds_fledged_from_nest': 'Number_birds_fledged_from_nest'
     })
 
+    logging.info('Finished cleaning and preparing the entire dataset\n')
     return chunk
 
 
@@ -57,16 +62,19 @@ def get_header_combinations(csv_file, exclude_headers=[]):
     :param exclude_headers: A list of headers to remove if needed
     :return: A list of combinations to preform ANOVA Testing
     """
-    df = pd.read_csv(csv_file, nrows=0)  # Only reads headers
+    logging.info('Starting to extract headers that will used and some to exclued')
+    df = pd.read_csv(csv_file, nrows=0) 
     headers = df.columns.str.replace(' ', '_').tolist()
 
     filtered_headers = [header for header in headers if header not in exclude_headers]
+    logging.info('Finsihed extracting headers')
 
     # Precompute all header combinations
     all_combinations = [
         comb for r in range(1, len(filtered_headers) + 1) 
         for comb in combinations(filtered_headers, r)
     ]
+    logging.info('Finsihed finding all combinations for ANOVA Testing\n')
     return all_combinations
 
 
@@ -103,12 +111,12 @@ def process_csv(csv_file, header_combinations, response_col='Babble_Length', chu
     :param chunksize: Size of datasets being 
     :return: CSV file of the Anova Result
     """
+    logging.info('Starting running combinations for ANOVA Testing')
     results = []
     chunk_iter = pd.read_csv(csv_file, chunksize=chunksize)
 
     for chunk in chunk_iter:
         chunk = clean_and_prepare_data(chunk)
-
         # Prepare arguments for parallel processing
         args = [(chunk, combo, response_col) for combo in header_combinations]
 
@@ -120,6 +128,7 @@ def process_csv(csv_file, header_combinations, response_col='Babble_Length', chu
         gc.collect()
 
     # Save all results at once
+    logging.info('Saving ANOVA results to partial_anova_results.csv\n')
     pd.concat(results).to_csv('partial_anova_results.csv', index=False)
 
 def filter_significant_results(file='partial_anova_results.csv', output_file='filtered_file.csv'):
@@ -130,17 +139,18 @@ def filter_significant_results(file='partial_anova_results.csv', output_file='fi
     :return: Filter CVS File
     """
     # Filter rows where PR(>F) is less than or equal to 0.05
+    logging.info('Starting to filter rows where PR(>F) is less than or equal to 0.05')
     df = pd.read_csv(file)
     df_filtered = df[df['PR(>F)'].notna() & (df['PR(>F)'] <= 0.05)]
-    
+
     df_filtered.to_csv(output_file, index=False)
-    print(f"\nSignificant ANOVA results saved to '{output_file}'")
+    logging.info(f"\nSignificant ANOVA results saved to '{output_file}'")
 
 
 if __name__ == "__main__":
     # csv_file = "CMBabble_Master_clean.csv" 
     csv_file = "CMBabble_Master_combined.csv" 
-    exclude_headers = ["Babbles", "Bout_ID", "Notes", "Raven work", "Date_on_vocalization_2", ""]
+    exclude_headers = ["Babbles", "Bout_ID", "Notes", "Raven work", "Date_on_vocalization_2"]
     response_col = 'Babble_Length'
 
     # Precompute header combinations
