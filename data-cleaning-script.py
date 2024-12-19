@@ -430,7 +430,8 @@ def plot_pairs(data: dict, basename: str, dfc: pd.DataFrame):
 def setup_model_data(df_clean: pd.DataFrame, columns: list, basename: str):
     """
     Prepares data for a machine learning model by creating separate CSV files
-    for each user-specified column, including required columns (Babbles, Bout ID) in each file.
+    for each user-specified column, including required columns (Babbles, Bout ID) in each file,
+    and a combined CSV file with all specified columns.
     
     Parameters:
     df_clean (pandas.DataFrame): The input data.
@@ -438,36 +439,49 @@ def setup_model_data(df_clean: pd.DataFrame, columns: list, basename: str):
     basename (str): A base name for new CSV files.
 
     Returns:
-    pandas.DataFrame: Ordered DataFrame with Babbles, Bout ID, and specified columns.
-    list: Paths to created CSV files
+    list: Paths to created CSV files.
     """
     # Set up column order: required columns first, then user columns
     required_cols = ['Babbles', 'Bout ID']
     
-    # Validation
-    if not columns:
-        raise ValueError("Please provide at least one column.")
-    
+    # Check for missing columns
     missing_cols = [col for col in columns if col not in df_clean.columns]
     if missing_cols:
         raise ValueError(f"Columns not found: {', '.join(missing_cols)}")
 
-    # Create individual CSV files for each user-specified column
+    # List to store paths of created files
     created_files = []
+
+    # Create individual CSV files for each specified column
     for col in columns:
-        # Create DataFrame with required columns plus the current column
-        col_data = df_clean[required_cols + [col]].copy()
-        
-        # Generate filename based on column name (sanitize the column name)
-        safe_colname = col.replace(' ', '_')
-        col_csv_path = f"{basename}_{safe_colname}_scm.csv"
-        
-        # Export to CSV
-        col_data.to_csv(col_csv_path, encoding='utf-8', index=False)
-        created_files.append(col_csv_path)
-        logging.info(f'Data exported for column {col}')
-    
-    return 
+        try:
+            # Create DataFrame with required columns plus the current column
+            col_data = df_clean[required_cols + [col]].copy()
+
+            # Generate filename based on column name (sanitize the column name)
+            safe_colname = col.replace(' ', '_').replace('/', '_')
+            col_csv_path = f"{basename}_{safe_colname}_scm.csv"
+
+            # Export to CSV
+            col_data.to_csv(col_csv_path, encoding='utf-8', index=False)
+            created_files.append(col_csv_path)
+            logging.info(f"Data exported for column {col} to {col_csv_path}")
+        except Exception as e:
+            logging.error(f"Failed to export data for column {col}: {e}")
+
+    # Create a combined CSV file with all required and user-specified columns
+    try:
+        combined_data = df_clean[required_cols + columns].copy()
+        combined_csv_path = f"{basename}_combined.csv"
+        combined_data.to_csv(combined_csv_path, encoding='utf-8', index=False)
+        created_files.append(combined_csv_path)
+        logging.info(f"Combined data exported to {combined_csv_path}")
+    except Exception as e:
+        logging.error(f"Failed to export combined data: {e}")
+
+    return created_files
+
+ 
 
 
 def main():
