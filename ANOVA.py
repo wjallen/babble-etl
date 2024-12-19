@@ -83,7 +83,7 @@ def run_anova_parallel(args):
     Run the ANOVA in parallel
     Retrieves info need to format the ANOVA Formula to run Testing
     :param args: A list of headers to remove if needed
-    :return: The Anova Result from testing 
+    :return: The ANOVA Result from testing 
     """
     chunk, combination, response_col = args
     try:
@@ -96,11 +96,15 @@ def run_anova_parallel(args):
         model = ols(formula, data=data).fit()
         anova_result = anova_lm(model)
 
-        # Add meaningful names for df
-        anova_result['Interaction Effects'] = anova_result.index
+        # Add meaningful names for effects (Interaction effect between two or more variables )
+        anova_result['Interaction Effect'] = anova_result.index
         anova_result['Combination'] = str(combination)
-        
-        return anova_result.reset_index(drop=True)
+
+        anova_result = anova_result.reset_index(drop=True)
+        cols = ['Effect'] + [col for col in anova_result.columns if col != 'Effect']
+        anova_result = anova_result[cols]
+
+        return anova_result
     except Exception as e:
         print(f"Error with combination {combination}: {e}")
         return None
