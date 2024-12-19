@@ -15,7 +15,7 @@ def clean_and_prepare_data(chunk):
     """
     Retrieve data from csv file to clean and prepare the entire dataset
     :param chunk: The dataset
-    :return: The dataset that are clean  and prepare
+    :return: The dataset that is clean and prepared
 
     TODO: Fix the date columns to datetime, ANOVA can only read in certain formate
     """
@@ -48,7 +48,7 @@ def clean_and_prepare_data(chunk):
 
     # Rename columns
     chunk = chunk.rename(columns={
-        'Bout_no.': 'Bout_number',
+        'Bout_no.': 'Bout_number'
     })
 
     logging.info('Finished cleaning and preparing the entire dataset\n')
@@ -57,10 +57,10 @@ def clean_and_prepare_data(chunk):
 
 def get_header_combinations(csv_file, exclude_headers=[]):
     """
-    Retrieve data from csv file to extract headers that will used and some to exclued
+    Retrieve data from csv file to extract headers that will be used and some to exclude
     :param csv_file: The path to the csv_file
     :param exclude_headers: A list of headers to remove if needed
-    :return: A list of combinations to preform ANOVA Testing
+    :return: A list of combinations to perform ANOVA Testing
     """
     logging.info('Starting to extract headers that will used and some to exclued')
     df = pd.read_csv(csv_file, nrows=0) 
@@ -138,10 +138,9 @@ def process_csv(csv_file, header_combinations, response_col='Babble_Length', chu
 
 def filter_significant_results(file='partial_anova_results.csv', output_file='filtered_file.csv'):
     """
-    Filters rows where PR(>F) is <= 0.05, removes duplicates based on 'Interaction Effects',
-    and keeps the one with the lowest PR(>F).
-    :param file: Path to CSV file.
-    :param output_file: Path to output CSV file.
+    Filters and saves significant results from ANOVA tests (PR(>F) <= 0.05).
+    :param file: Path to the CSV file containing ANOVA results
+    :param output_file: Path to save the filtered results
     :return: Filtered and deduplicated CSV file.
     """
     logging.info('Starting to filter rows where PR(>F) is less than or equal to 0.05')
