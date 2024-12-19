@@ -97,10 +97,10 @@ def run_anova_parallel(args):
         anova_result = anova_lm(model)
 
         # Add meaningful names for effects (Interaction effect between two or more variables )
-        anova_result['Interaction Effect'] = anova_result.index
+        anova_result.reset_index(inplace=True)
+        anova_result.rename(columns={'index': 'Interaction Effect'}, inplace=True)
         anova_result['Combination'] = str(combination)
 
-        anova_result = anova_result.reset_index(drop=True)
         cols = ['Effect'] + [col for col in anova_result.columns if col != 'Effect']
         anova_result = anova_result[cols]
 
