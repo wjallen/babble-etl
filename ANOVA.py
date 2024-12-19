@@ -95,8 +95,12 @@ def run_anova_parallel(args):
         formula = f'{response_col} ~ ' + ' * '.join(combination)
         model = ols(formula, data=data).fit()
         anova_result = anova_lm(model)
+
+        # Add meaningful names for df
+        anova_result['Interaction Effects'] = anova_result.index
         anova_result['Combination'] = str(combination)
-        return anova_result
+        
+        return anova_result.reset_index(drop=True)
     except Exception as e:
         print(f"Error with combination {combination}: {e}")
         return None
