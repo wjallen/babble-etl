@@ -35,7 +35,11 @@ clean_data.json
     },
     
     "rename_columns": {
-        "old_name": "new_name"
+        "Cluster6": "Babbles",
+        "Bout ID (sans subtype)": "Bout ID", 
+        "Bout no.": "Bout Number",
+        "No. eggs hatched from nest": "Number eggs hatched from nest",
+        "No. birds fledged from nest": "Number birds fledged from nest"
     },
    
     "data_types": {
@@ -148,3 +152,6 @@ The results of an ANOVA can be used to inform visualizations like box plots or b
 3. **Post-Hoc Tests:** If the ANOVA reveals significant differences, use post-hoc tests (like Tukey's HSD) to determine which groups differ from each other.
 
 4. **Visualization:** Complement ANOVA results with visualizations (e.g., boxplots, violin plots) to help interpret differences in group means.
+
+
+#### How to Use ANOVA for EDA
